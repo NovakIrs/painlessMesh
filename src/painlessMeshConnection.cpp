@@ -98,6 +98,7 @@ void ICACHE_FLASH_ATTR SentBuffer::read(size_t length, temp_buffer_t &buf) {
 }
 
 void ICACHE_FLASH_ATTR SentBuffer::freeRead() {
+    staticThis->debugMsg(COMMUNICATION, "SentBuffer::freeRead(): %u\n", last_read_size);
     if (last_read_size == jsonStrings.begin()->length() + 1)
         jsonStrings.pop_front();
     else
@@ -130,7 +131,7 @@ ICACHE_FLASH_ATTR MeshConnection::MeshConnection(tcp_pcb *tcp, painlessMesh *pMe
 
     tcp_sent(pcb, tcpSentCb);
 
-    //tcp_nagle_disable(pcb);
+    tcp_nagle_disable(pcb);
     tcp_err(pcb, [](void * arg, err_t err) {
         if (arg == NULL)
             staticThis->debugMsg(CONNECTION, "tcp_err(): MeshConnection NULL %d\n", err);
@@ -251,6 +252,9 @@ void ICACHE_FLASH_ATTR MeshConnection::close(bool close_pcb) {
         esp_wifi_disconnect();
     }
     mesh->eraseClosedConnections();
+
+    if (station && mesh->_station_got_ip)
+        mesh->_station_got_ip = false;
 }
 
 
@@ -296,8 +300,10 @@ bool ICACHE_FLASH_ATTR MeshConnection::writeNext() {
         auto errCode = tcp_write(pcb, static_cast<const void*>(shared_buffer.buffer), len, TCP_WRITE_FLAG_COPY);
         if (errCode == ERR_OK) {
             staticThis->debugMsg(COMMUNICATION, "writeNext(): Package sent = %s\n", shared_buffer.buffer);
-            sentBuffer.freeRead();
+#ifndef ESP32 // This seems to sometimes causes crashes on ESP32
             tcp_output(pcb); // TODO only do this for priority messages
+#endif
+            sentBuffer.freeRead();
             writeNext();
             return true;
         } else {
@@ -560,9 +566,9 @@ void ICACHE_FLASH_ATTR MeshConnection::handleMessage(String &buffer, uint32_t re
     staticThis->debugMsg(COMMUNICATION, "meshRecvCb(): Recvd from %u-->%s<--\n", this->nodeId, buffer.c_str());
 
     DynamicJsonBuffer jsonBuffer;
-    JsonObject& root = jsonBuffer.parseObject(buffer.c_str());
+    JsonObject& root = jsonBuffer.parseObject(jsonBuffer.strdup(buffer), 100);
     if (!root.success()) {   // Test if parsing succeeded.
-        staticThis->debugMsg(ERROR, "meshRecvCb(): parseObject() failed. total_length=%d, data=%s<--\n", buffer.c_str());
+        staticThis->debugMsg(ERROR, "meshRecvCb(): parseObject() failed. total_length=%d, data=%s<--\n", buffer.length(), buffer.c_str());
         return;
     }
 
@@ -623,6 +629,10 @@ int ICACHE_FLASH_ATTR painlessMesh::espWifiEventCb(void * ctx, system_event_t *e
         staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_SCAN_DONE\n");
         // Call the same thing original callback called
         staticThis->stationScan.scanComplete();
+        break;
+    case SYSTEM_EVENT_STA_START:
+        staticThis->stationScan.task.forceNextIteration();
+        staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_START\n");
         break;
     case SYSTEM_EVENT_STA_CONNECTED:
         staticThis->debugMsg(CONNECTION, "espWifiEventCb(): SYSTEM_EVENT_STA_CONNECTED\n");
