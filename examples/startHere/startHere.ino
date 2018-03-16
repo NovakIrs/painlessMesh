@@ -21,6 +21,14 @@
 #define   MESH_PASSWORD   "somethingSneaky"
 #define   MESH_PORT       5555
 
+// Prototypes
+void sendMessage(); 
+void receivedCallback(uint32_t from, String & msg);
+void newConnectionCallback(uint32_t nodeId);
+void changedConnectionCallback(); 
+void nodeTimeAdjustedCallback(int32_t offset); 
+void delayReceivedCallback(uint32_t from, int32_t delay);
+
 painlessMesh  mesh;
 bool calc_delay = false;
 SimpleList<uint32_t> nodes;
@@ -85,8 +93,8 @@ void sendMessage() {
   String msg = "Hello from node ";
   msg += mesh.getNodeId();
   msg += " myFreeMemory: " + String(ESP.getFreeHeap());
-  msg += " noTasks: " + String(mesh.scheduler.size());
-  bool error = mesh.sendBroadcast(msg);
+//  msg += " noTasks: " + String(mesh.scheduler.size()); // not available in the TaskScheduler lib
+  mesh.sendBroadcast(msg);
 
   if (calc_delay) {
     SimpleList<uint32_t>::iterator node = nodes.begin();
