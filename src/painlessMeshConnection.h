@@ -1,6 +1,7 @@
 #ifndef   _PAINLESS_MESH_CONNECTION_H_
 #define   _PAINLESS_MESH_CONNECTION_H_
 
+#define _TASK_PRIORITY // Support for layered scheduling priority
 #define _TASK_STD_FUNCTION
 #include <TaskSchedulerDeclarations.h>
 
@@ -55,6 +56,8 @@ class SentBuffer {
 
         bool empty();
         void clear();
+
+        bool clean = true;
 };
 
 class MeshConnection {

@@ -31,11 +31,16 @@ StartHere is a basic how to use example. It blinks built-in LED (in ESP-12) as m
 
 ### Dependencies
 
-painlessMesh makes use of the following library, which can be installed through the Arduino Library Manager
+painlessMesh makes use of the following libraries, which can be installed through the Arduino Library Manager
 
 - [ArduinoJson](https://github.com/bblanchon/ArduinoJson)
+- [TaskScheduler](https://github.com/arkhipenko/TaskScheduler)
 
 If platformio is used to install the library, then the dependency will be installed automatically.
+
+# Contributing
+
+We try to follow the [git flow](https://www.atlassian.com/git/tutorials/comparing-workflows/gitflow-workflow) development model. Which means that we have a `develop` branch and `master` branch. All development is done under feature branches, which are (when finished) merged into the development branch. When a new version is released we merge the `develop` branch into the `master` branch. For more details see the [CONTRIBUTING](https://gitlab.com/painlessMesh/painlessMesh/blob/master/CONTRIBUTING.md) file.
 
 # Getting help
 
@@ -141,7 +146,7 @@ returns true if everything works, false if not.  Prints an error message to Seri
 
 Returns mesh topology in JSON format.
 
-### SimpleList<uint32_t> painlessMesh::getNodeList()
+### std::list<uint32_t> painlessMesh::getNodeList()
 
 Get a list of all known nodes. This includes nodes that are both directly and indirectly connected to the current node.
 
@@ -161,12 +166,17 @@ Sends a node a packet to measure network trip delay to that node. Returns true i
 
 nodeDelayCallback_t is a funtion in the form of `void (uint32_t nodeId, int32_t delay)`.
 
+### void painlessMesh::stationManual( String ssid, String password, uint16_t port, uint8_t *remote_ip )
+
+Connects the node to an AP outside the mesh. When specifying a `remote_ip` and `port`, the node opens a TCP connection after establishing the WiFi connection.
+
+Note: The mesh must be on the same WiFi channel as the AP.
+
 # Included dependencies
 
-`painlessMesh` includes two other projects within its source directory. These projects were included directly in a slightly modified form. The original version of the two projects are:
+`painlessMesh` includes one other projects within its source directory. This project was included to add ESP8266 support to it. The original version of the project is:
 
 - [AsyncTCP](https://github.com/me-no-dev/AsyncTCP)
-- [TaskScheduler](http://playground.arduino.cc/Code/TaskScheduler)
 
 # Funding
 
